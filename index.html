@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Ajuste de Facturación</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        h2 {
+            color: #e60000; /* Color Claro */
+            margin-bottom: 20px;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 48%;
+        }
+        .output-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 48%;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #ccc;
+            margin-bottom: 20px; /* Espacio debajo del cuadro de plantilla */
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #e60000; /* Color Claro */
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px; /* Reduje el padding para que los cuadros sean más pequeños */
+            margin-bottom: 15px; /* Espaciado más pequeño entre los cuadros */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px; /* Tamaño de fuente más pequeño */
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #e60000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        /* Estilo para la alerta */
+        .alerta {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: red;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 9999;
+            text-align: center;
+            width: auto; /* Se ajusta al contenido */
+            max-width: 80%;
+        }
+
+        /* Estilo para el fondo oscuro detrás de la alerta */
+        .fondo-oscuro {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9998;
+        }
+
+        /* Estilo para el contenedor del botón de cierre (fuera de la alerta) */
+        .boton-cerrar {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            display: none; /* El botón de cierre comienza oculto */
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Formulario de Ajuste de Facturación</h2>
+        <h5>No olvidar generar SAR!!!</h5>
+        <form id="formulario">
+            <label for="numeroRecibo">Número de recibo:</label>
+            <input type="text" id="numeroRecibo" required>
+            
+            <label for="montoConIGV">Monto con IGV:</label>
+            <input type="number" id="montoConIGV" required>
+            
+            <label for="correo">Correo:</label>
+            <input type="email" id="correo" required>
+            
+            <label for="descripcionCaso">Descripción del caso:</label>
+            <textarea id="descripcionCaso" required></textarea>
+            
+            <label for="descartes">Descartes realizados:</label>
+            <textarea id="descartes" required></textarea>
+            
+            <label for="medidasCorrectivas">Medidas correctivas:</label>
+            <textarea id="medidasCorrectivas" required></textarea>
+            
+            <label for="codigoLlamada">Código de llamada:</label>
+            <input type="text" id="codigoLlamada" required>
+            
+            <label for="responsable">Responsable (en caso aplique):</label>
+            <input type="text" id="responsable">
+            
+            <label for="tipoRegistro">Tipo de Registro:</label>
+            <select id="tipoRegistro" onchange="updateMotivo()">
+                <option value="">Selecciona...</option>
+                <option value="FUNDADO">FUNDADO</option>
+                <option value="NO FUNDADO">NO FUNDADO</option>
+                <option value="RETENCIÓN">RETENCIÓN</option>
+            </select>
+            
+            <label for="motivo">Motivo:</label>
+            <select id="motivo" onchange="updateArea()">
+                <option value="">Selecciona...</option>
+            </select>
+            
+            <label for="area">Área a Imputar:</label>
+            <select id="area">
+                <option value="">Selecciona...</option>
+            </select>
+
+            <!-- Nueva sección para calcular monto por días sin servicio -->
+            <h3>Cálculo de Monto por Días sin Servicio</h3>
+            <label for="montoFacturacion">Monto total de facturación (con IGV):</label>
+            <input type="number" id="montoFacturacion" required>
+            
+            <label for="diasSinServicio">Días sin servicio:</label>
+            <input type="number" id="diasSinServicio" required>
+            
+            <button type="button" onclick="calcularMontoPorDias()">Calcular Monto de Descuento</button>
+            
+            <div id="resultadoMonto" style="display:none; margin-top: 10px;">
+                <p><strong>Monto a pagar por días sin servicio (con IGV):</strong> <span id="montoTotal"></span></p>
+            </div>
+        </form>
+    </div>
+
+    <div class="output-container" id="outputContainer">
+        <h3>Plantilla Generada:</h3>
+        <pre id="plantillaGenerada"></pre>
+    </div>
+
+    <div class="button-container">
+        <button type="button" onclick="generarPlantilla()">Generar Plantilla</button>
+        <button type="button" onclick="resetForm()">Borrar Todo</button>
+    </div>
+
+    <!-- Alerta emergente -->
+    <div class="fondo-oscuro" id="fondoOscuro"></div>
+    <div class="alerta" id="alertaSAR">
+        NO OLVIDAR DE GENERAR SAR!
+    </div>
+
+    <!-- Botón de cierre fuera de la alerta -->
+    <button class="boton-cerrar" id="botonCerrar" onclick="cerrarAlerta()">X</button>
+
+    <script>
+        const motivos = {
+            "FUNDADO": ["COBROS POR SERVICIOS VAS", "FALLA CON EL SERVICIO", "FALLA CON TRX PROGRAMADAS Y AUTOMÁTICAS", "INCUMPLIMIENTO DE OFRECIMIENTO"],
+            "NO FUNDADO": ["NO ME APLICARON EL DESCUENTO OFRECIDO", "NO RECONOCE COBRO POR SERVICIO VAS", "NO RECONOCE PRORRATEO", "OTROS MOTIVOS"],
+            "RETENCIÓN": ["RETENCIÓN CALL CENTER SERVICIO FIJO"]
+        };
+
+        const areas = {
+            "COBROS POR SERVICIOS VAS": ["OTROS SERVICIOS DE VALOR AGREGADOR"],
+            "FALLA CON EL SERVICIO": ["FALLA CON EL SERVICIO FIJO", "FALLA CON EL SERVICIO FIJO MASIVO"],
+            "FALLA CON TRX PROGRAMADAS Y AUTOMÁTICAS": ["CAMBIO DE PLAN", "COBRO POR ADICIONALES", "COBRO POR CUOTA DE INSTALACION", "DESCUENTO POR CAMPAÑA NO EJECUTADO", "NO SE EJECUTÓ OCC", "SUSPENSIÓN TEMPORAL NO EJECUTADO", "OTRAS TRANSACCIONES"],
+            "INCUMPLIMIENTO DE OFRECIMIENTO": ["DESCUENTO OFRECIDO RETENCIONES"]
+        };
+
+        function updateMotivo() {
+            const tipoRegistro = document.getElementById("tipoRegistro").value;
+            const motivoSelect = document.getElementById("motivo");
+            motivoSelect.innerHTML = '<option value="">Selecciona...</option>';
+            
+            if (tipoRegistro && motivos[tipoRegistro]) {
+                motivos[tipoRegistro].forEach(motivo => {
+                    const option = document.createElement("option");
+                    option.value = motivo;
+                    option.text = motivo;
+                    motivoSelect.appendChild(option);
+                });
+            }
+            updateArea(); // Reset area options
+        }
+
+        function updateArea() {
+            const motivo = document.getElementById("motivo").value;
+            const areaSelect = document.getElementById("area");
+            areaSelect.innerHTML = '<option value="">Selecciona...</option>';
+            
+            if (motivo && areas[motivo]) {
+                areas[motivo].forEach(area => {
+                    const option = document.createElement("option");
+                    option.value = area;
+                    option.text = area;
+                    areaSelect.appendChild(option);
+                });
+            }
+        }
+
+        function generarPlantilla() {
+            const numeroRecibo = document.getElementById("numeroRecibo").value;
+            const montoConIGV = parseFloat(document.getElementById("montoConIGV").value);
+            const correo = document.getElementById("correo").value;
+            const descripcionCaso = document.getElementById("descripcionCaso").value;
+            const descartes = document.getElementById("descartes").value;
+            const medidasCorrectivas = document.getElementById("medidasCorrectivas").value;
+            const codigoLlamada = document.getElementById("codigoLlamada").value;
+            const responsable = document.getElementById("responsable").value;
+            const tipoRegistro = document.getElementById("tipoRegistro").value;
+            const motivo = document.getElementById("motivo").value;
+            const area = document.getElementById("area").value;
+
+            // Cálculo del monto sin IGV
+            const montoSinIGV = (montoConIGV / 1.18).toFixed(2);
+
+            // Plantilla con los datos
+            const plantilla = `
+Tipo de Documento: Nota de crédito
+Tipo de Registro: ${tipoRegistro}
+Número de recibo: ${numeroRecibo}
+Concepto a ajustar: ${motivo}
+Importe (Sin IGV): ${montoSinIGV}
+Área a imputar: ${area}
+Motivo: ${motivo}
+Responsable: ${responsable}
+Correo: ${correo}
+Nro. de contacto : 
+Descripción del caso: ${descripcionCaso}
+Descartes realizados: ${descartes}
+Medidas correctivas: ${medidasCorrectivas}
+Número de SAR (en caso aplique): 
+Número de reclamo (en caso aplique): 
+Código de llamada: ${codigoLlamada}
+            `;
+            document.getElementById("plantillaGenerada").textContent = plantilla;
+
+            // Mostrar la alerta
+            document.getElementById("fondoOscuro").style.display = "block";
+            document.getElementById("alertaSAR").style.display = "block";
+            document.getElementById("botonCerrar").style.display = "block"; // Mostrar el botón de cierre
+        }
+
+        // Función para cerrar la alerta
+        function cerrarAlerta() {
+            document.getElementById("fondoOscuro").style.display = "none";
+            document.getElementById("alertaSAR").style.display = "none";
+            document.getElementById("botonCerrar").style.display = "none"; // Ocultar el botón de cierre
+        }
+
+        function resetForm() {
+            document.getElementById("formulario").reset(); // Resetea el formulario
+            document.getElementById("plantillaGenerada").textContent = ""; // Limpia la plantilla generada
+            document.getElementById("resultadoMonto").style.display = "none"; // Oculta el resultado
+        }
+
+        function calcularMontoPorDias() {
+            const montoFacturacion = parseFloat(document.getElementById("montoFacturacion").value);
+            const diasSinServicio = parseInt(document.getElementById("diasSinServicio").value);
+
+            if (!isNaN(montoFacturacion) && !isNaN(diasSinServicio) && diasSinServicio > 0) {
+                const montoDiario = montoFacturacion / 30;
+                const montoTotal = montoDiario * diasSinServicio;
+
+                document.getElementById("montoTotal").textContent = `${montoTotal.toFixed(2)} (con IGV)`;
+                document.getElementById("resultadoMonto").style.display = "block";
+            } else {
+                alert("Por favor ingrese valores válidos.");
+            }
+        }
+    </script>
+</body>
+</html>
